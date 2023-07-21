@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,6 +15,7 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class JobScraperServiceImpl implements JobScraperService {
 
     @Override
@@ -22,12 +24,16 @@ public class JobScraperServiceImpl implements JobScraperService {
         String url = "https://jobs.techstars.com/jobs";
 
         try {
+            log.info("Connection to the main page");
             Document document = Jsoup.connect(url).get();
             Elements elementsByAttributeValue = document.getElementsByAttributeValue("data-testid", "job-list-item");
             for (Element element : elementsByAttributeValue) {
                 Job job = new Job();
                 String jobPageUrl = getJobPageUrl(element);
-                if (jobPageUrl == null) continue;
+                if (jobPageUrl == null) {
+                    log.warn("Job page URL is null, skipping.");
+                    continue;
+                }
 
                 job.setJobPageUrl(jobPageUrl);
                 job.setPositionName(element.select(".sc-beqWaB.kToBwF").text());
@@ -36,11 +42,13 @@ public class JobScraperServiceImpl implements JobScraperService {
                 job.setLogoUrl(element.select("img[data-testid='image']").attr("src"));
                 job.setTags(getTags(element));
 
+                log.info("Connection to the job page {}", jobPageUrl);
                 Document jobDetails = Jsoup.connect(jobPageUrl).get();
                 String laborFunction = jobDetails.select(".sc-beqWaB.bpXRKw").get(4).text();
                 if (jobFunctions == null || isContainsInJobFunction(jobFunctions, laborFunction)) {
                     job.setLaborFunction(laborFunction);
                 } else {
+                    log.info("Job labor function '{}' is not in the specified job functions list, skipping.", laborFunction);
                     continue;
                 }
 
@@ -53,6 +61,7 @@ public class JobScraperServiceImpl implements JobScraperService {
             }
 
         } catch (IOException e) {
+            log.error("An error occurred while connecting to the website or parsing data.", e);
             e.printStackTrace();
         }
 
