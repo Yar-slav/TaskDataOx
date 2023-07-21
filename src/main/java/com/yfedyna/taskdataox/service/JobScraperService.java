@@ -5,5 +5,5 @@ import com.yfedyna.taskdataox.model.Job;
 import java.util.List;
 
 public interface JobScraperService {
-    List<Job> scrapeJobsByFunction(JobFunction jobFunctions);
+    List<Job> scrapeJobsByFunction(JobFunction jobFunction);
 }

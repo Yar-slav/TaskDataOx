@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 public class JobScraperServiceImpl implements JobScraperService {
 
     @Override
-    public List<Job> scrapeJobsByFunction(JobFunction jobFunctions) {
+    public List<Job> scrapeJobsByFunction(JobFunction jobFunction) {
         List<Job> jobs = new ArrayList<>();
         String url = "https://jobs.techstars.com/jobs";
 
@@ -30,28 +30,17 @@ public class JobScraperServiceImpl implements JobScraperService {
             for (Element element : elementsByAttributeValue) {
                 Job job = new Job();
                 String jobPageUrl = getJobPageUrl(element);
-                if (jobPageUrl == null) {
-                    log.warn("Job page URL is null, skipping.");
-                    continue;
-                }
+                if (jobPageUrl == null) continue;
 
                 job.setJobPageUrl(jobPageUrl);
                 job.setPositionName(element.select(".sc-beqWaB.kToBwF").text());
-
                 job.setOrganizationTitle(Objects.requireNonNull(element.selectFirst("a[data-testid='link']")).text());
                 job.setLogoUrl(element.select("img[data-testid='image']").attr("src"));
                 job.setTags(getTags(element));
 
                 log.info("Connection to the job page {}", jobPageUrl);
                 Document jobDetails = Jsoup.connect(jobPageUrl).get();
-                String laborFunction = jobDetails.select(".sc-beqWaB.bpXRKw").get(4).text();
-                if (jobFunctions == null || isContainsInJobFunction(jobFunctions, laborFunction)) {
-                    job.setLaborFunction(laborFunction);
-                } else {
-                    log.info("Job labor function '{}' is not in the specified job functions list, skipping.", laborFunction);
-                    continue;
-                }
-
+                if (getLabourFunction(jobFunction, jobDetails) == null) continue;
                 job.setOrganizationUrl(jobDetails.select("a[data-testid='button']").get(1).attr("href"));
                 job.setPostedDate(Objects.requireNonNull(jobDetails.selectFirst(".sc-beqWaB.gRXpLa")).text());
                 job.setLocations(getLocations(jobDetails));
@@ -68,21 +57,28 @@ public class JobScraperServiceImpl implements JobScraperService {
         return jobs;
     }
 
-    private static boolean isContainsInJobFunction(JobFunction jobFunction, String laborFunction) {
-        for (String function : jobFunction.getJobFunctions()) {
-            if (function.equalsIgnoreCase(laborFunction)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static String getJobPageUrl(Element element) {
         String jobPageUrl = Objects.requireNonNull(element.selectFirst("a[data-testid='job-title-link']")).attr("href");
         if (!jobPageUrl.startsWith("http")) {
             return "https://jobs.techstars.com/" + jobPageUrl;
+        } else {
+            log.warn("Job page URL is null, skipping.");
+            return null;
         }
-        return null;
+    }
+
+    private static String getLabourFunction(JobFunction jobFunction, Document jobDetails) {
+        String laborFunction = jobDetails.select(".sc-beqWaB.bpXRKw").get(4).text();
+        if (jobFunction == null || isContainsInJobFunction(jobFunction, laborFunction)) {
+            return laborFunction;
+        } else {
+            log.info("Job labor function '{}' is not in the specified job functions list, skipping.", laborFunction);
+            return null;
+        }
+    }
+
+    private static boolean isContainsInJobFunction(JobFunction jobFunction, String laborFunction) {
+        return jobFunction.getJobFunctions().equalsIgnoreCase(laborFunction);
     }
 
     private static List<String> getLocations(Document jobDetails) {
@@ -98,6 +94,5 @@ public class JobScraperServiceImpl implements JobScraperService {
         }
         return tags;
     }
-
 
 }
