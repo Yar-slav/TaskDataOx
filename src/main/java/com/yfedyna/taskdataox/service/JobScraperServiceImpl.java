@@ -18,35 +18,82 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class JobScraperServiceImpl implements JobScraperService {
 
+//    @Override
+//    public List<Job> scrapeJobsByFunction(JobFunction jobFunction) {
+//        List<Job> jobs = new ArrayList<>();
+//        String url = "https://jobs.techstars.com/jobs";
+//
+//        try {
+//            log.info("Connection to the main page");
+//            Document document = Jsoup.connect(url).get();
+//            Elements elementsByAttributeValue = document.getElementsByAttributeValue("data-testid", "job-list-item");
+//            for (Element element : elementsByAttributeValue) {
+//                Job job = new Job();
+//                String jobPageUrl = getJobPageUrl(element);
+//                if (jobPageUrl == null) continue;
+//
+//                job.setJobPageUrl(jobPageUrl);
+//                job.setPositionName(element.select(".sc-beqWaB.kToBwF").text());
+//                job.setOrganizationTitle(Objects.requireNonNull(element.selectFirst("a[data-testid='link']")).text());
+//                job.setLogoUrl(element.select("img[data-testid='image']").attr("src"));
+//                job.setTags(getTags(element));
+//
+//                log.info("Connection to the job page {}", jobPageUrl);
+//                Document jobDetails = Jsoup.connect(jobPageUrl).get();
+//                if (getLabourFunction(jobFunction, jobDetails) == null) continue;
+//                job.setOrganizationUrl(jobDetails.select("a[data-testid='button']").get(1).attr("href"));
+//                job.setPostedDate(Objects.requireNonNull(jobDetails.selectFirst(".sc-beqWaB.gRXpLa")).text());
+//                job.setLocations(getLocations(jobDetails));
+//                job.setDescription(jobDetails.getElementsByAttributeValue("data-testid", "careerPage").html());
+//
+//                jobs.add(job);
+//            }
+//
+//        } catch (IOException e) {
+//            log.error("An error occurred while connecting to the website or parsing data.", e);
+//            e.printStackTrace();
+//        }
+//
+//        return jobs;
+//    }
+
     @Override
     public List<Job> scrapeJobsByFunction(JobFunction jobFunction) {
         List<Job> jobs = new ArrayList<>();
         String url = "https://jobs.techstars.com/jobs";
 
         try {
-            log.info("Connection to the main page");
-            Document document = Jsoup.connect(url).get();
-            Elements elementsByAttributeValue = document.getElementsByAttributeValue("data-testid", "job-list-item");
-            for (Element element : elementsByAttributeValue) {
-                Job job = new Job();
-                String jobPageUrl = getJobPageUrl(element);
-                if (jobPageUrl == null) continue;
 
-                job.setJobPageUrl(jobPageUrl);
-                job.setPositionName(element.select(".sc-beqWaB.kToBwF").text());
-                job.setOrganizationTitle(Objects.requireNonNull(element.selectFirst("a[data-testid='link']")).text());
-                job.setLogoUrl(element.select("img[data-testid='image']").attr("src"));
-                job.setTags(getTags(element));
+            int page = 1;
+            while (jobs.size() < 100) {
+                String pageUrl = url + "?page=" + page;
+                log.info("Connection to the main page {} ", page);
+                Document document = Jsoup.connect(pageUrl).get();
+                Elements elementsByAttributeValue = document.getElementsByAttributeValue("data-testid", "job-list-item");
+                for (int i = (page-1)*20; i<elementsByAttributeValue.size(); i++) {
+                    Element element = elementsByAttributeValue.get(i);
+                    Job job = new Job();
+                    String jobPageUrl = getJobPageUrl(element);
+                    if (jobPageUrl == null) continue;
 
-                log.info("Connection to the job page {}", jobPageUrl);
-                Document jobDetails = Jsoup.connect(jobPageUrl).get();
-                if (getLabourFunction(jobFunction, jobDetails) == null) continue;
-                job.setOrganizationUrl(jobDetails.select("a[data-testid='button']").get(1).attr("href"));
-                job.setPostedDate(Objects.requireNonNull(jobDetails.selectFirst(".sc-beqWaB.gRXpLa")).text());
-                job.setLocations(getLocations(jobDetails));
-                job.setDescription(jobDetails.getElementsByAttributeValue("data-testid", "careerPage").html());
+                    job.setJobPageUrl(jobPageUrl);
+                    job.setPositionName(element.select(".sc-beqWaB.kToBwF").text());
+                    job.setOrganizationTitle(Objects.requireNonNull(element.selectFirst("a[data-testid='link']")).text());
+                    job.setLogoUrl(element.select("img[data-testid='image']").attr("src"));
+                    job.setTags(getTags(element));
 
-                jobs.add(job);
+                    log.info("Connection to the job page {}", jobPageUrl);
+                    Document jobDetails = Jsoup.connect(jobPageUrl).get();
+                    if (getLabourFunction(jobFunction, jobDetails) == null) continue;
+                    job.setOrganizationUrl(jobDetails.select("a[data-testid='button']").get(1).attr("href"));
+                    job.setPostedDate(Objects.requireNonNull(jobDetails.selectFirst(".sc-beqWaB.gRXpLa")).text());
+                    job.setLocations(getLocations(jobDetails));
+                    job.setDescription(jobDetails.getElementsByAttributeValue("data-testid", "careerPage").html());
+
+                    jobs.add(job);
+                    if (jobs.size() >= 100) break;
+                }
+                page++;
             }
 
         } catch (IOException e) {
