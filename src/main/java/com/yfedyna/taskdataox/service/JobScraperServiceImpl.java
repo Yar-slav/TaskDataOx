@@ -123,7 +123,7 @@ public class JobScraperServiceImpl implements JobScraperService {
         if (jobFunction == null) {
             return jobDetails.select(".sc-beqWaB.bpXRKw").get(4).text();
         } else {
-            return jobFunction.getJobFunctions();
+            return jobFunction.getJobFunction();
         }
     }
 

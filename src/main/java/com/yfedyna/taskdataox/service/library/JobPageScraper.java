@@ -25,7 +25,7 @@ public class JobPageScraper {
         System.setProperty("webdriver.chrome.driver", "selenium/chromedriver");
         webDriver = new ChromeDriver();
         webDriver.get("https://jobs.techstars.com/jobs");
-        applyJobFunctionFilter(jobFunction.getJobFunctions());
+        applyJobFunctionFilter(jobFunction.getJobFunction());
 
         return webDriver.getCurrentUrl();
     }
