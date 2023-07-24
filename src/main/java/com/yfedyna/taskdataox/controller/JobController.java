@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,9 +21,12 @@ public class JobController {
     private final JobService jobService;
 
     @GetMapping("/scrape")
-    public List<Job> scrapeJobs(@RequestBody(required = false) JobFunction jobFunctions) {
-        log.info("Received request to scrape jobs with JobFunction: {}", jobFunctions);
-        List<Job> jobs = jobScraperService.scrapeJobsByFunction(jobFunctions);
+    public List<Job> scrapeJobs(
+            @RequestBody(required = false) JobFunction jobFunction,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        log.info("Received request to scrape jobs with JobFunction: {}", jobFunction);
+        List<Job> jobs = jobScraperService.scrapeJobsByFunction(jobFunction, size);
         return jobService.saveJobs(jobs);
     }
 }
